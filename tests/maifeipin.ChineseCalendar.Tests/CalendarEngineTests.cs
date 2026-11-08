@@ -155,5 +155,34 @@ namespace maifeipin.ChineseCalendar.Tests
             var sunUrumqi = ChineseCalendarEngine.GetSunTimes(dt, 43.8, 87.6);
             Assert.AreNotEqual(sun.Transit, sunUrumqi.Transit, "乌鲁木齐日上中天应晚于北京时间约2小时");
         }
+        [TestMethod]
+        public void TestReviewCases2051AndFourPillarsAndBounds()
+        {
+            // 1. 2051-02-11 香港天文台与国家标准：正月初一 (春节)
+            var lunar2051 = ChineseCalendarEngine.GetLunarDate(new DateTime(2051, 2, 11));
+            Assert.AreEqual(2051, lunar2051.Year);
+            Assert.AreEqual(1, lunar2051.Month);
+            Assert.AreEqual(1, lunar2051.Day);
+            Assert.IsFalse(lunar2051.IsLeapMonth);
+
+            // 2. 2100-12-31 边界农历
+            var lunar2100 = ChineseCalendarEngine.GetLunarDate(new DateTime(2100, 12, 31));
+            Assert.AreEqual(2100, lunar2100.Year);
+            Assert.AreEqual(12, lunar2100.Month);
+            Assert.AreEqual(1, lunar2100.Day);
+
+            // 3. 边界抛出 ArgumentOutOfRangeException
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => ChineseCalendarEngine.GetLunarDate(new DateTime(1900, 1, 1)));
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => ChineseCalendarEngine.GetLunarDate(new DateTime(2101, 1, 1)));
+
+            // 4. 四柱立春交节时刻换年换月 (2026-02-04 04:10 立春)
+            var early = ChineseCalendarEngine.GetFourPillars(new DateTime(2026, 2, 4, 0, 0, 0));
+            Assert.AreEqual("乙巳", early.YearPillar.Name);
+            Assert.AreEqual("己丑", early.MonthPillar.Name);
+
+            var late = ChineseCalendarEngine.GetFourPillars(new DateTime(2026, 2, 4, 23, 0, 0));
+            Assert.AreEqual("丙午", late.YearPillar.Name);
+            Assert.AreEqual("庚寅", late.MonthPillar.Name);
+        }
     }
 }

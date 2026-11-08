@@ -9,11 +9,11 @@
     <LangVersion>latest</LangVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Description>通用中华万年历、农历、二十四节气、干支四柱、生肖星座与真太阳时核心计算类库</Description>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Authors>maifeipin</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>ChineseCalendar;Lunar;SolarTerms;BaZi;Zodiac;Horoscope;FengShui</PackageTags>
-    <RepositoryUrl>https://github.com/maifeipin/ChineseCalendar</RepositoryUrl>
+    <RepositoryUrl>https://github.com/maifeipin/maifeipin.ChineseCalendar</RepositoryUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>

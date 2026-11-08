@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using maifeipin.ChineseCalendar.Enums;
 using maifeipin.ChineseCalendar.Models;
 
@@ -11,6 +12,18 @@ namespace maifeipin.ChineseCalendar
     /// </summary>
     public static class ChineseCalendarEngine
     {
+        /// <summary>
+        /// 引擎支持的最小公历日期 (1900-01-31，农历庚子年正月初一)
+        /// </summary>
+        public static readonly DateTime MinSupportedDate = new(1900, 1, 31);
+
+        /// <summary>
+        /// 引擎支持的最大公历日期 (2100-12-31，农历庚申年十二月初一)
+        /// </summary>
+        public static readonly DateTime MaxSupportedDate = new(2100, 12, 31);
+
+        private static readonly ChineseLunisolarCalendar BclCalendar = new();
+        private static readonly DateTime BclMinDate = new(1901, 2, 19);
         private static readonly DateTime BaseDate1900 = new(1900, 1, 31);
         private static readonly DateTime BaseGanZhiDate = new(1900, 1, 1);
         private static readonly DateTime SolarTermEpochUtc = new DateTime(1900, 1, 6, 2, 5, 0, DateTimeKind.Utc).AddMilliseconds(-21960000);
@@ -24,78 +37,81 @@ namespace maifeipin.ChineseCalendar
         /// <returns>农历完整数据结构</returns>
         public static LunarDate GetLunarDate(DateTime solarDate)
         {
-            int y = solarDate.Year;
-            int m = solarDate.Month;
-            int d = solarDate.Day;
-
-            if (y < 1900 || y > 2100)
+            DateTime dateOnly = solarDate.Date;
+            if (dateOnly < MinSupportedDate || dateOnly > MaxSupportedDate)
             {
-                throw new ArgumentOutOfRangeException(nameof(solarDate), "计算范围支持 1900 至 2100 年");
+                throw new ArgumentOutOfRangeException(nameof(solarDate), $"计算范围支持 {MinSupportedDate:yyyy-MM-dd} 至 {MaxSupportedDate:yyyy-MM-dd}");
             }
 
-            // 计算与 1900年1月31日（农历正月初一）的相差天数
-            int offset = (int)(solarDate.Date - BaseDate1900).TotalDays;
+            int y = dateOnly.Year;
+            int m = dateOnly.Month;
+            int d = dateOnly.Day;
 
-            int iY = 1900;
-            int daysOfYear = 0;
-            for (; iY <= 2100 && offset > 0; iY++)
+            int lYear;
+            int lMonth;
+            int lDay;
+            bool isLeap;
+
+            if (dateOnly >= BclMinDate)
             {
-                daysOfYear = GetLunarYearDays(iY);
-                offset -= daysOfYear;
+                lYear = BclCalendar.GetYear(dateOnly);
+                int mRaw = BclCalendar.GetMonth(dateOnly);
+                int leap = BclCalendar.GetLeapMonth(lYear);
+                isLeap = (leap > 0 && mRaw == leap);
+                lMonth = (leap > 0 && mRaw >= leap) ? mRaw - 1 : mRaw;
+                lDay = BclCalendar.GetDayOfMonth(dateOnly);
             }
-            if (offset < 0)
+            else
             {
-                offset += daysOfYear;
-                iY--;
-            }
-
-            int lYear = iY;
-            int leap = GetLeapMonth(iY);
-            bool isLeap = false;
-
-            int iM = 1;
-            int daysOfMonth = 0;
-            for (; iM <= 12 && offset > 0; iM++)
-            {
-                if (leap > 0 && iM == (leap + 1) && !isLeap)
+                // 1900-01-31 至 1901-02-18 (农历 1900 庚子年)
+                int offset = (int)(dateOnly - BaseDate1900).TotalDays;
+                int leap = 8;
+                isLeap = false;
+                lYear = 1900;
+                int iM = 1;
+                int daysOfMonth = 0;
+                for (; iM <= 12 && offset > 0; iM++)
                 {
+                    if (iM == (leap + 1) && !isLeap)
+                    {
+                        --iM;
+                        isLeap = true;
+                        daysOfMonth = GetLeapDays(1900);
+                    }
+                    else
+                    {
+                        daysOfMonth = GetMonthDays(1900, iM);
+                    }
+
+                    if (isLeap && iM == (leap + 1))
+                    {
+                        isLeap = false;
+                    }
+
+                    offset -= daysOfMonth;
+                }
+
+                if (offset == 0 && iM == leap + 1)
+                {
+                    if (isLeap)
+                    {
+                        isLeap = false;
+                    }
+                    else
+                    {
+                        isLeap = true;
+                        --iM;
+                    }
+                }
+                if (offset < 0)
+                {
+                    offset += daysOfMonth;
                     --iM;
-                    isLeap = true;
-                    daysOfMonth = GetLeapDays(lYear);
-                }
-                else
-                {
-                    daysOfMonth = GetMonthDays(lYear, iM);
                 }
 
-                if (isLeap && iM == (leap + 1))
-                {
-                    isLeap = false;
-                }
-
-                offset -= daysOfMonth;
+                lMonth = iM;
+                lDay = offset + 1;
             }
-
-            if (offset == 0 && leap > 0 && iM == leap + 1)
-            {
-                if (isLeap)
-                {
-                    isLeap = false;
-                }
-                else
-                {
-                    isLeap = true;
-                    --iM;
-                }
-            }
-            if (offset < 0)
-            {
-                offset += daysOfMonth;
-                --iM;
-            }
-
-            int lMonth = iM;
-            int lDay = offset + 1;
 
             string monthName = (isLeap ? "闰" : "") + ChineseCalendarConstants.MonthNames[lMonth];
             string dayName = (lDay >= 1 && lDay <= 30) ? ChineseCalendarConstants.DayNames[lDay] : string.Empty;
@@ -194,6 +210,7 @@ namespace maifeipin.ChineseCalendar
 
         /// <summary>
         /// 获取某年某个节气的精确交节公历时间（中国标准时间 UTC+8）
+        /// 注：节气时刻基于经典经验天文回归模型推算，误差约在 5~15 分钟以内，适合日常民俗历法与四柱八字节气分界判定。
         /// </summary>
         public static SolarTermDetail GetSolarTermDetail(int year, SolarTerm term)
         {
@@ -246,23 +263,61 @@ namespace maifeipin.ChineseCalendar
         }
 
         /// <summary>
-        /// 获取月干支（遵循五虎遁年起月诀，以二十四节气精确交节为分界）
+        /// 获取月干支（遵循五虎遁年起月诀，以当日中午 12:00 估算）
         /// </summary>
         public static GanZhiPair GetMonthGanZhi(int year, int month, int day)
         {
-            int yG = (year - 1864) % 10;
-            if (yG < 0) yG += 10;
+            return GetMonthGanZhi(new DateTime(year, month, day, 12, 0, 0));
+        }
 
-            int k = month - 1;
-            var term = GetSolarTermDetail(year, (SolarTerm)(k * 2));
-            if (day < term.Day)
+        /// <summary>
+        /// 获取指定时刻的月干支（遵循五虎遁年起月诀，以二十四节气中十二“节”精确交节时刻为分界）
+        /// </summary>
+        public static GanZhiPair GetMonthGanZhi(DateTime dt, int? knownSolarYear = null)
+        {
+            int solarYear;
+            if (knownSolarYear.HasValue)
             {
-                k--;
+                solarYear = knownSolarYear.Value;
             }
-            if (k < 0) k += 12;
+            else
+            {
+                var liChun = GetSolarTermDetail(dt.Year, SolarTerm.LiChun).ExactTime;
+                solarYear = dt < liChun ? dt.Year - 1 : dt.Year;
+            }
 
-            int stem = (yG * 2 + k + 1) % 10;
-            int branch = (k + 1) % 12;
+            // 12节（寅月立春 ~ 丑月小寒/立春）
+            DateTime[] termTimes = new DateTime[13];
+            termTimes[0] = GetSolarTermDetail(solarYear, SolarTerm.LiChun).ExactTime;
+            termTimes[1] = GetSolarTermDetail(solarYear, SolarTerm.JingZhe).ExactTime;
+            termTimes[2] = GetSolarTermDetail(solarYear, SolarTerm.QingMing).ExactTime;
+            termTimes[3] = GetSolarTermDetail(solarYear, SolarTerm.LiXia).ExactTime;
+            termTimes[4] = GetSolarTermDetail(solarYear, SolarTerm.MangZhong).ExactTime;
+            termTimes[5] = GetSolarTermDetail(solarYear, SolarTerm.XiaoShu).ExactTime;
+            termTimes[6] = GetSolarTermDetail(solarYear, SolarTerm.LiQiu).ExactTime;
+            termTimes[7] = GetSolarTermDetail(solarYear, SolarTerm.BaiLu).ExactTime;
+            termTimes[8] = GetSolarTermDetail(solarYear, SolarTerm.HanLu).ExactTime;
+            termTimes[9] = GetSolarTermDetail(solarYear, SolarTerm.LiDong).ExactTime;
+            termTimes[10] = GetSolarTermDetail(solarYear, SolarTerm.DaXue).ExactTime;
+            termTimes[11] = GetSolarTermDetail(solarYear + 1, SolarTerm.XiaoHan).ExactTime;
+            termTimes[12] = GetSolarTermDetail(solarYear + 1, SolarTerm.LiChun).ExactTime;
+
+            int mOffset = 0;
+            for (int i = 0; i < 12; i++)
+            {
+                if (dt >= termTimes[i] && (i == 11 || dt < termTimes[i + 1]))
+                {
+                    mOffset = i;
+                    break;
+                }
+            }
+
+            int yearGan = (solarYear - 1864) % 10;
+            if (yearGan < 0) yearGan += 10;
+
+            int startStem = ((yearGan % 5) * 2 + 2) % 10;
+            int stem = (startStem + mOffset) % 10;
+            int branch = (2 + mOffset) % 12; // 寅月地支为 2
             return new GanZhiPair(stem, branch);
         }
 
@@ -284,14 +339,15 @@ namespace maifeipin.ChineseCalendar
         }
 
         /// <summary>
-        /// 计算完整的四柱八字（年柱、月柱、日柱、时柱）
+        /// 计算完整的四柱八字（以立春交节时刻换年，以十二“节”精确交节时刻换月）
         /// </summary>
         public static FourPillars GetFourPillars(DateTime dt)
         {
-            var lDate = GetLunarDate(dt);
+            var liChunThisYear = GetSolarTermDetail(dt.Year, SolarTerm.LiChun).ExactTime;
+            int solarYear = dt < liChunThisYear ? dt.Year - 1 : dt.Year;
+            var yearGz = GetYearGanZhi(solarYear);
+            var monthGz = GetMonthGanZhi(dt, solarYear);
             var dayGz = GetDayGanZhi(dt.Year, dt.Month, dt.Day);
-            var monthGz = GetMonthGanZhi(dt.Year, dt.Month, dt.Day);
-            var yearGz = GetYearGanZhi(lDate.Year);
             var hourGz = GetHourGanZhi(dayGz, dt.Hour);
 
             return new FourPillars
