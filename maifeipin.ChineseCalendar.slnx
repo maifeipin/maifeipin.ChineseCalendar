@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/maifeipin.ChineseCalendar/maifeipin.ChineseCalendar.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/maifeipin.ChineseCalendar.Tests/maifeipin.ChineseCalendar.Tests.csproj" />
+  </Folder>
+</Solution>
