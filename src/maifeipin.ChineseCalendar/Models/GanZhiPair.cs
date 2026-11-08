@@ -38,3 +38,4 @@ namespace maifeipin.ChineseCalendar.Models
         public static bool operator !=(GanZhiPair left, GanZhiPair right) => !left.Equals(right);
     }
 }
+

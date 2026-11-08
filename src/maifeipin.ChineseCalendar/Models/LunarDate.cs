@@ -98,3 +98,4 @@ namespace maifeipin.ChineseCalendar.Models
         public override string ToString() => $"{SolarDate:yyyy-MM-dd} {FullChineseDate} ({YearGanZhi}年【{ZodiacName}】 {MonthGanZhi}月 {DayGanZhi}日) {ConstellationName}";
     }
 }
+
