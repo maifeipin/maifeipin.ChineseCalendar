@@ -1,5 +1,9 @@
 # maifeipin.ChineseCalendar
 
+[![NuGet Version](https://img.shields.io/nuget/v/maifeipin.ChineseCalendar.svg?style=flat-square&color=blue)](https://www.nuget.org/packages/maifeipin.ChineseCalendar/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/maifeipin.ChineseCalendar.svg?style=flat-square)](https://www.nuget.org/packages/maifeipin.ChineseCalendar/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+
 中华万年历、农历、二十四节气、干支四柱、生肖星座与真太阳时核心计算类库。
 
 专为中华传统文化、万年历、命理八字排盘、风水择吉、天文星座等应用打造的**纯 C# 跨平台核心公共组件**。
@@ -29,7 +33,26 @@
 
 ## 📦 安装与引用
 
-### 项目引用 (Project Reference)
+### 方式 1：通过 NuGet 引用（推荐）
+
+#### .NET CLI
+```bash
+dotnet add package maifeipin.ChineseCalendar
+```
+
+#### Package Manager Console
+```powershell
+Install-Package maifeipin.ChineseCalendar
+```
+
+#### PackageReference (项目 .csproj)
+```xml
+<PackageReference Include="maifeipin.ChineseCalendar" Version="1.0.1" />
+```
+
+---
+
+### 方式 2：本地源码项目引用 (Project Reference)
 ```xml
 <ProjectReference Include="..\..\maifeipin.ChineseCalendar\src\maifeipin.ChineseCalendar\maifeipin.ChineseCalendar.csproj" />
 ```
