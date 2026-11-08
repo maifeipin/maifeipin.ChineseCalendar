@@ -206,11 +206,11 @@ namespace maifeipin.ChineseCalendar
 
         #endregion
 
-        #region 3. 二十四节气精确交节时刻推算
+        #region 3. 二十四节气公历估算时刻推算
 
         /// <summary>
-        /// 获取某年某个节气的精确交节公历时间（中国标准时间 UTC+8）
-        /// 注：节气时刻基于经典经验天文回归模型推算，误差约在 5~15 分钟以内，适合日常民俗历法与四柱八字节气分界判定。
+        /// 获取某年某个节气的公历估算交节时间（中国标准时间 UTC+8）
+        /// 注：节气时刻基于经典经验天文回归模型估算，受地球公转微扰等摄动影响存在数分钟固有偏差，适合民俗历法与节气月分界参考，非专业高精度天文星历。
         /// </summary>
         public static SolarTermDetail GetSolarTermDetail(int year, SolarTerm term)
         {

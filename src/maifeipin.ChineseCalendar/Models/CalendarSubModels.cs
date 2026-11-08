@@ -4,18 +4,22 @@ using maifeipin.ChineseCalendar.Enums;
 namespace maifeipin.ChineseCalendar.Models
 {
     /// <summary>
-    /// 节气详细信息（包含具体交节公历时间，精确到分）
+    /// 节气详细信息（包含具体公历估算交节时间）
     /// </summary>
     public sealed class SolarTermDetail
     {
         public SolarTerm Term { get; set; }
         public string Name => ChineseCalendarConstants.SolarTermNames[(int)Term];
+
+        /// <summary>
+        /// 公历交节估算时刻（基于天文回归模型估算，供历法与节气分界参考）
+        /// </summary>
         public DateTime ExactTime { get; set; }
         public int Day => ExactTime.Day;
         public int Hour => ExactTime.Hour;
         public int Minute => ExactTime.Minute;
 
-        public override string ToString() => $"{Name} ({ExactTime:yyyy-MM-dd HH:mm})";
+        public override string ToString() => $"{Name} (约 {ExactTime:yyyy-MM-dd HH:mm})";
     }
 
     /// <summary>
